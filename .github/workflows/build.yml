@@ -1,0 +1,65 @@
+name: Build
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Package Tags
+    runs-on: ubuntu-latest
+    env:
+      WP_DEVELOP_REPO: 'https://github.com/WordPress/wordpress-develop.git'
+      WP_PHPUNIT_REPO: ${{ secrets.WP_PHPUNIT_REPO }}
+    steps:
+      - name: Generate token
+        uses: tibdex/github-app-token@v1
+        id: generate-token
+        with:
+          app_id: ${{ secrets.BOT_APP_ID }}
+          private_key: ${{ secrets.BOT_PRIVATE_KEY }}
+      
+      - uses: actions/checkout@v3
+        with:
+          repository: wp-phpunit/build
+      
+      - uses: actions/checkout@v3
+        with:
+          repository: wordpress/wordpress-develop
+          path: repos/wordpress
+      
+      - uses: actions/checkout@v3
+        with:
+          repository: ${{ format('wp-phpunit/{0}', secrets.TARGET_REPO_NAME) }}
+          path: repos/package
+          token: ${{ steps.generate-token.outputs.token }}
+
+      - name: Configure Git
+        working-directory: repos/package
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+      - name: Get Composer Cache Directory
+        id: composer-cache
+        run: echo "::set-output name=dir::$(composer config cache-files-dir)"
+      - name: Cache PHP dependencies
+        uses: actions/cache@v3
+        id: actions-cache
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.2'
+          tools: composer:2.2
+
+      - run: composer install --prefer-dist --no-dev
+
+      - name: Run
+        run: bin/build
+
+      - name: Push to repo
+        run: bin/deploy

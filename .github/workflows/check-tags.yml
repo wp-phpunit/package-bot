@@ -1,0 +1,61 @@
+name: Check Tags
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check-tags:
+    name: Check Tags
+    runs-on: ubuntu-latest
+    env:
+      WP_DEVELOP_REPO: 'https://github.com/WordPress/wordpress-develop.git'
+      WP_PHPUNIT_REPO: ${{ secrets.WP_PHPUNIT_REPO }}
+    outputs:
+      tags-to-build: ${{ steps.tags-to-build.outputs.result }}
+  
+    steps:
+      - name: Generate token
+        uses: tibdex/github-app-token@v1
+        id: generate-token
+        with:
+          app_id: ${{ secrets.BOT_APP_ID }}
+          private_key: ${{ secrets.BOT_PRIVATE_KEY }}
+
+      - name: Determine tags to build
+        id: tags-to-build
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ steps.generate-token.outputs.token }}
+          debug: 'true'
+          script: |
+            const [wpTags, pkgTags] = await Promise.all([
+              github.paginate(github.rest.repos.listTags, {
+                owner: 'wordpress',
+                repo: 'wordpress-develop',
+                per_page: 100,
+              }),
+              github.paginate(github.rest.repos.listTags, {
+                owner: context.repo.owner,
+                repo: '${{ secrets.TARGET_REPO_NAME }}',
+                per_page: 100,
+              }),
+            ])
+            function tagEligible(tag) {
+              const [major, minor] = tag.split(/\./).map(Number);
+              return major > 3 || (major === 3 && minor > 6)
+            }
+            const pkgTagNames = pkgTags.map(tag => tag.name);
+            const tagsToBuild = wpTags.filter(
+              tag => tagEligible(tag.name) && ! pkgTagNames.includes(tag.name)
+            )
+            return tagsToBuild.map(tag => tag.name);
+
+      - name: Inspect
+        run: echo '${{ steps.tags-to-build.outputs.result }}' | jq
+
+  build-tags:
+    name: Build Tags
+    needs: check-tags
+    if: needs.check-tags.tags-to-build != '[]'
+    uses: ./.github/workflows/build.yml
+    secrets: inherit
