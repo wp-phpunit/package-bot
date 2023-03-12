@@ -56,6 +56,6 @@ jobs:
   build-tags:
     name: Build Tags
     needs: check-tags
-    if: needs.check-tags.tags-to-build != '[]'
+    if: needs.check-tags.outputs.tags-to-build != '[]'
     uses: ./.github/workflows/build.yml
     secrets: inherit
