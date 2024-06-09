@@ -62,3 +62,13 @@ jobs:
     if: needs.check-tags.outputs.tags-to-build != '[]'
     uses: ./.github/workflows/build.yml
     secrets: inherit
+
+  keepalive:
+    name: Keepalive
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      # Checkout is needed to determine if keepalive is necessary based on repo activity.
+      - uses: actions/checkout@v4
+      - uses: gautamkrishnar/keepalive-workflow@v2
