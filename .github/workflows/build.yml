@@ -40,23 +40,14 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
 
-      - name: Get Composer Cache Directory
-        id: composer-cache
-        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
-      - name: Cache PHP dependencies
-        uses: actions/cache@v3
-        id: actions-cache
-        with:
-          path: ${{ steps.composer-cache.outputs.dir }}
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
-          restore-keys: ${{ runner.os }}-composer-
-
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '7.2'
           tools: composer:2.2
 
-      - run: composer install --prefer-dist --no-dev
+      - uses: "ramsey/composer-install@v3"
+        with:
+          composer-options: "--no-dev --prefer-dist"
 
       - name: Run
         run: bin/build
