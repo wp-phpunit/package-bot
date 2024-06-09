@@ -18,7 +18,7 @@ jobs:
   
     steps:
       - name: Generate token
-        uses: tibdex/github-app-token@v1
+        uses: tibdex/github-app-token@v2
         id: generate-token
         with:
           app_id: ${{ secrets.BOT_APP_ID }}
@@ -26,7 +26,7 @@ jobs:
 
       - name: Determine tags to build
         id: tags-to-build
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           github-token: ${{ steps.generate-token.outputs.token }}
           debug: 'true'
