@@ -71,4 +71,6 @@ jobs:
     steps:
       # Checkout is needed to determine if keepalive is necessary based on repo activity.
       - uses: actions/checkout@v4
-      - uses: gautamkrishnar/keepalive-workflow@v2
+      - name: keepalive
+        if: github.event_name == 'schedule'
+        uses: efrecon/gh-action-keepalive@main
