@@ -67,7 +67,7 @@ jobs:
     name: Keepalive
     runs-on: ubuntu-latest
     permissions:
-      actions: write
+      contents: write
     steps:
       # Checkout is needed to determine if keepalive is necessary based on repo activity.
       - uses: actions/checkout@v4
